@@ -1,0 +1,85 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["createMany"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int       @id @default(autoincrement())
+  name           String    @db.VarChar(20)
+  email          String    @unique @db.VarChar(255)
+  password       String    @db.VarChar(255)
+  image          String?   @db.VarChar(255)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+  comments       Comment[]
+  followedToUser Follow[]  @relation("followedToUser")
+  followerToUser Follow[]  @relation("followerToUser")
+  likes          Like[]
+  posts          Post[]
+
+  @@map("users")
+}
+
+model Post {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  title     String    @db.VarChar(20)
+  content   String    @db.VarChar(255)
+  image     String?   @db.VarChar(255)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+  User      User      @relation(fields: [userId], references: [id])
+  comments  Comment[]
+  likes     Like[]
+
+  @@index([userId], name: "user_id")
+  @@map("posts")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  postId    Int      @map("post_id")
+  content   String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+  Post      Post     @relation(fields: [postId], references: [id])
+  User      User     @relation(fields: [userId], references: [id])
+
+  @@index([postId], name: "post_id")
+  @@index([userId], name: "user_id")
+  @@map("comments")
+}
+
+model Follow {
+  followedId     Int      @map("followed_id")
+  followerId     Int      @map("follower_id")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+  followedToUser User     @relation("followedToUser", fields: [followedId], references: [id])
+  followerToUser User     @relation("followerToUser", fields: [followerId], references: [id])
+
+  @@unique([followedId, followerId])
+  @@index([followedId], name: "followed_id")
+  @@index([followerId], name: "follower_id")
+  @@map("follows")
+}
+
+model Like {
+  userId    Int      @map("user_id")
+  postId    Int      @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+  Post      Post     @relation(fields: [postId], references: [id])
+  User      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, postId])
+  @@index([postId], name: "post_id")
+  @@index([userId], name: "user_id")
+  @@map("likes")
+}
